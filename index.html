@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Local-Only Realtime Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">Local Chat</div>
+      <div class="me">
+        <img id="myAvatar" class="avatar" alt="me" />
+        <div class="me-meta">
+          <div id="myName" class="name">You</div>
+          <div id="groupStatus" class="subtle">Detecting network…</div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">Online (local)</div>
+        <ul id="peers" class="peer-list"></ul>
+      </div>
+      <div class="section">
+        <div class="section-title">Voice</div>
+        <label class="row">
+          <input type="checkbox" id="muteToggle" />
+          Mute speech
+        </label>
+        <label class="row">
+          Voice
+          <select id="voiceSelect"></select>
+        </label>
+        <label class="row">
+          Rate
+          <input type="range" id="rateRange" min="0.5" max="1.5" step="0.05" value="1" />
+        </label>
+        <label class="row">
+          Pitch
+          <input type="range" id="pitchRange" min="0.8" max="1.2" step="0.05" value="1" />
+        </label>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <form id="composer" autocomplete="off">
+        <input id="input" type="text" placeholder="Type a message…" aria-label="Message" required />
+        <button id="sendBtn" type="submit">Send</button>
+      </form>
+    </main>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
