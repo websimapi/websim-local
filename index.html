@@ -11,13 +11,12 @@
 </head>
 <body>
   <div id="app">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="brand">Local Chat</div>
       <div class="me">
         <img id="myAvatar" class="avatar" alt="me" />
         <div class="me-meta">
           <div id="myName" class="name">You</div>
-          <div id="groupStatus" class="subtle">Detecting network…</div>
         </div>
       </div>
       <div class="section">
@@ -25,35 +24,56 @@
         <ul id="peers" class="peer-list"></ul>
       </div>
       <div class="section">
-        <div class="section-title">Voice</div>
-        <label class="row">
-          <input type="checkbox" id="muteToggle" />
-          Mute speech
-        </label>
-        <label class="row">
-          Voice
-          <select id="voiceSelect"></select>
-        </label>
-        <label class="row">
-          Rate
-          <input type="range" id="rateRange" min="0.5" max="1.5" step="0.05" value="1" />
-        </label>
-        <label class="row">
-          Pitch
-          <input type="range" id="pitchRange" min="0.8" max="1.2" step="0.05" value="1" />
-        </label>
+        <div class="section-title">Settings</div>
+        <div class="settings-group">
+            <div class="settings-title">Theme</div>
+             <label class="row">
+              Dark Mode
+              <label class="switch">
+                <input type="checkbox" id="themeToggle" />
+                <span class="slider round"></span>
+              </label>
+            </label>
+        </div>
+         <div class="settings-group">
+            <div class="settings-title">Voice</div>
+            <label class="row">
+              <input type="checkbox" id="muteToggle" />
+              Mute speech
+            </label>
+            <label class="row">
+              Voice
+              <select id="voiceSelect"></select>
+            </label>
+            <label class="row">
+              Rate
+              <input type="range" id="rateRange" min="0.5" max="1.5" step="0.05" value="1" />
+            </label>
+            <label class="row">
+              Pitch
+              <input type="range" id="pitchRange" min="0.8" max="1.2" step="0.05" value="1" />
+            </label>
+        </div>
       </div>
     </aside>
 
     <main class="main">
+      <header class="chat-header">
+        <button id="menuBtn" class="menu-btn" aria-label="Toggle Menu">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="header-status">
+            <div class="status-title">Local Chat</div>
+            <div id="groupStatus" class="subtle">Detecting network…</div>
+        </div>
+      </header>
       <div id="messages" class="messages" aria-live="polite"></div>
-      <div id="typingBar" class="typing" aria-live="polite" aria-atomic="true"></div>
       <form id="composer" autocomplete="off">
         <input id="input" type="text" placeholder="Type a message…" aria-label="Message" required />
-        <button id="micBtn" type="button" aria-label="Voice input">🎙️</button>
-        <button id="sendBtn" type="submit">Send</button>
+        <button id="sendBtn" type="submit" aria-label="Send Message">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
       </form>
-      <button id="scrollDown" class="scroll-down" aria-label="Scroll to latest">↓</button>
     </main>
   </div>
 

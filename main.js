@@ -1,6 +1,8 @@
 // Utilities
 const qs = (s, el = document) => el.querySelector(s);
 const el = {
+  app: qs('#app'),
+  sidebar: qs('#sidebar'),
   messages: qs('#messages'),
   form: qs('#composer'),
   input: qs('#input'),
@@ -12,9 +14,8 @@ const el = {
   voiceSelect: qs('#voiceSelect'),
   rateRange: qs('#rateRange'),
   pitchRange: qs('#pitchRange'),
-  micBtn: qs('#micBtn'),
-  typingBar: qs('#typingBar'),
-  scrollDown: qs('#scrollDown'),
+  themeToggle: qs('#themeToggle'),
+  menuBtn: qs('#menuBtn'),
 };
 
 let room;
@@ -25,10 +26,10 @@ let tts = {
   rate: 1,
   pitch: 1,
 };
-let recognition = null, recognizing = false;
 
 // Init
 (async function init() {
+  setupTheme();
   setupTTSUI();
   groupHash = await deriveLocalGroupHash().catch(() => null);
   if (!groupHash) {
@@ -51,7 +52,6 @@ let recognition = null, recognizing = false;
 
   // Subscriptions
   room.subscribePresence(updatePeerList);
-  room.subscribePresence(p => updateTypingBar());
   room.subscribeRoomState(() => {}); // no-op, placeholder for future
   room.onmessage = (event) => {
     const data = event.data || event;
@@ -75,7 +75,6 @@ let recognition = null, recognizing = false;
 
   // UI events
   el.form.addEventListener('submit', onSend);
-  el.input.addEventListener('input', onTyping);
   el.muteToggle.addEventListener('change', () => {
     tts.muted = el.muteToggle.checked;
   });
@@ -85,14 +84,28 @@ let recognition = null, recognizing = false;
   });
   el.rateRange.addEventListener('input', () => tts.rate = parseFloat(el.rateRange.value));
   el.pitchRange.addEventListener('input', () => tts.pitch = parseFloat(el.pitchRange.value));
-  setupSTT();
+  el.menuBtn.addEventListener('click', () => el.app.classList.toggle('sidebar-open'));
+  el.messages.addEventListener('click', () => {
+    if (window.innerWidth < 900) {
+      el.app.classList.remove('sidebar-open');
+    }
+  });
 
   // Status
   el.groupStatus.textContent = groupHash.startsWith("isolated-") ? "Isolated (no network match)" : "Local-only linked";
-  if (!/Mobi/i.test(navigator.userAgent)) el.input.focus();
-  el.messages.addEventListener('scroll', onScrollCheck);
-  el.scrollDown.addEventListener('click', () => scrollToBottom(true));
 })();
+
+function setupTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.dataset.theme = savedTheme;
+    el.themeToggle.checked = savedTheme === 'dark';
+
+    el.themeToggle.addEventListener('change', () => {
+        const newTheme = el.themeToggle.checked ? 'dark' : 'light';
+        document.documentElement.dataset.theme = newTheme;
+        localStorage.setItem('theme', newTheme);
+    });
+}
 
 // Send message
 function onSend(e) {
@@ -100,7 +113,7 @@ function onSend(e) {
   const text = el.input.value.trim();
   if (!text) return;
   el.input.value = "";
-  navigator.vibrate?.(10);
+  el.input.focus();
 
   const self = room.peers[room.clientId] || {};
   const payload = {
@@ -112,23 +125,28 @@ function onSend(e) {
   };
   room.send(payload);
 
-  // Locally render (in case echo is disabled somewhere)
-  addMessage(room.clientId, self.username, self.avatarUrl, text, payload.timestamp, true);
-  speak(text);
+  // Locally render our own message immediately
+  if (!payload.echo) {
+      addMessage(room.clientId, self.username, self.avatarUrl, text, payload.timestamp, true);
+      speak(text);
+  }
 }
 
 // Render message
 function addMessage(clientId, username, avatarUrl, text, timestamp, isYou = false) {
-  const nearBottom = isAtBottom();
+  const isSelf = isYou || clientId === room.clientId;
+  
   const wrap = document.createElement('div');
-  wrap.className = `msg ${isYou || clientId === room.clientId ? 'you' : ''}`;
+  wrap.className = `msg ${isSelf ? 'you' : ''}`;
 
   const meta = document.createElement('div');
   meta.className = 'meta';
+  
   const img = document.createElement('img');
   img.src = avatarUrl || "https://unavatar.io/github";
   img.alt = username || "user";
-  img.width = 18; img.height = 18; img.style.borderRadius = "50%"; img.referrerPolicy = "no-referrer";
+  img.className = 'avatar-small';
+  img.referrerPolicy = "no-referrer";
 
   const author = document.createElement('span');
   author.className = 'author';
@@ -136,7 +154,7 @@ function addMessage(clientId, username, avatarUrl, text, timestamp, isYou = fals
 
   const time = document.createElement('span');
   time.className = 'time';
-  time.textContent = new Date(timestamp || Date.now()).toLocaleTimeString();
+  time.textContent = new Date(timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   meta.append(img, author, time);
 
@@ -146,7 +164,12 @@ function addMessage(clientId, username, avatarUrl, text, timestamp, isYou = fals
 
   wrap.append(meta, bubble);
   el.messages.appendChild(wrap);
-  if (nearBottom) scrollToBottom(); else el.scrollDown.classList.add('show');
+  
+  // Scroll to bottom with a smooth behavior
+  el.messages.scrollTo({
+    top: el.messages.scrollHeight,
+    behavior: 'smooth'
+  });
 }
 
 // Presence list
@@ -170,7 +193,6 @@ function updatePeerList() {
     li.append(img, span);
     el.peers.appendChild(li);
   }
-  updateTypingBar();
 }
 
 // TTS
@@ -209,18 +231,6 @@ function speak(text) {
   speechSynthesis.speak(utter);
 }
 
-function setupSTT() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { el.micBtn.disabled = true; el.micBtn.title = "Speech recognition not supported"; return; }
-  recognition = new SR(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = navigator.language || 'en-US';
-  let finalText = '';
-  recognition.onresult = (e) => { let interim=''; for (let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i]; if (r.isFinal) { finalText += r[0].transcript; } else { interim += r[0].transcript; } } el.input.value = (finalText + ' ' + interim).trim(); if (e.results[e.results.length-1].isFinal && el.input.value) { el.form.requestSubmit(); } };
-  recognition.onstart = () => { recognizing = true; el.micBtn.classList.add('recording'); el.micBtn.textContent = '⏹️'; };
-  recognition.onend = () => { recognizing = false; el.micBtn.classList.remove('recording'); el.micBtn.textContent = '🎙️'; };
-  recognition.onerror = () => { recognizing = false; el.micBtn.classList.remove('recording'); el.micBtn.textContent = '🎙️'; };
-  el.micBtn.addEventListener('click', async () => { try { recognizing ? recognition.stop() : recognition.start(); } catch {} });
-}
-
 // Derive a non-reversible local group hash from public IP.
 // Never store or expose the raw IP. Only share the hash for equality checks.
 async function deriveLocalGroupHash() {
@@ -242,34 +252,4 @@ async function deriveLocalGroupHash() {
   } catch {
     return null;
   }
-}
-
-let typingTimeout;
-function onTyping() {
-  room.updatePresence({ groupHash, typing: true });
-  clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => room.updatePresence({ typing: false }), 1200);
-}
-
-function updateTypingBar() {
-  const list = Object.entries(room.peers || {})
-    .filter(([id]) => id !== room.clientId && room.presence[id]?.groupHash === groupHash && room.presence[id]?.typing)
-    .map(([, p]) => p.username || 'Someone');
-  el.typingBar.textContent = list.length ? `${list.join(', ')} ${list.length>1?'are':'is'} typing…` : '';
-}
-
-function isAtBottom() {
-  const { scrollTop, scrollHeight, clientHeight } = el.messages;
-  return scrollTop >= scrollHeight - clientHeight - 8;
-}
-
-function scrollToBottom(force=false) {
-  if (force || isAtBottom()) {
-    el.messages.scrollTop = el.messages.scrollHeight;
-    el.scrollDown.classList.remove('show');
-  }
-}
-
-function onScrollCheck() {
-  isAtBottom() ? el.scrollDown.classList.remove('show') : el.scrollDown.classList.add('show');
 }
