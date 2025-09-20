@@ -10,6 +10,7 @@ const el = {
   myName: qs('#myName'),
   myAvatar: qs('#myAvatar'),
   groupStatus: qs('#groupStatus'),
+  composerStatus: qs('#composerStatus'),
   muteToggle: qs('#muteToggle'),
   voiceSelect: qs('#voiceSelect'),
   rateRange: qs('#rateRange'),
@@ -35,7 +36,9 @@ let tts = {
   if (!groupHash) {
     // Fallback: isolated device-only group
     groupHash = "isolated-" + crypto.getRandomValues(new Uint32Array(1))[0].toString(16);
-    el.groupStatus.textContent = "Isolated (no network match)";
+    updateStatus("Isolated (no network match)", "disconnected");
+  } else {
+    updateStatus("Local-only linked", "connected");
   }
 
   room = new WebsimSocket();
@@ -91,9 +94,14 @@ let tts = {
     }
   });
 
-  // Status
-  el.groupStatus.textContent = groupHash.startsWith("isolated-") ? "Isolated (no network match)" : "Local-only linked";
+  // Status is set inside init()
 })();
+
+function updateStatus(text, state) {
+    el.groupStatus.textContent = text;
+    el.composerStatus.textContent = text;
+    el.composer.dataset.status = state; // 'connected', 'disconnected'
+}
 
 function setupTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -234,22 +242,35 @@ function speak(text) {
 // Derive a non-reversible local group hash from public IP.
 // Never store or expose the raw IP. Only share the hash for equality checks.
 async function deriveLocalGroupHash() {
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 4000);
-    // Fetch minimal IP text. If blocked or offline, it will throw and we fallback.
-    const res = await fetch('https://api.ipify.org?format=json', { signal: ctrl.signal, cache: 'no-store' });
-    clearTimeout(t);
-    if (!res.ok) throw new Error('ip fetch failed');
-    const { ip } = await res.json();
-    if (!ip) throw new Error('no ip');
-    const enc = new TextEncoder().encode(ip);
-    const digest = await crypto.subtle.digest('SHA-256', enc);
-    const bytes = new Uint8Array(digest);
-    // Truncate to 12 hex chars for compact grouping
-    const hex = Array.from(bytes).slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('');
-    return `gh-${hex}`;
-  } catch {
-    return null;
+  const ipServices = [
+    'https://api.ipify.org?format=json',
+    'https://ipinfo.io/json',
+    'https://api.ip.sb/jsonip',
+  ];
+
+  for (const url of ipServices) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 3000);
+      const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+      clearTimeout(t);
+      if (!res.ok) continue; // Try next service
+      const data = await res.json();
+      const ip = data.ip;
+
+      if (ip && typeof ip === 'string') {
+        const enc = new TextEncoder().encode(ip);
+        const digest = await crypto.subtle.digest('SHA-265', enc);
+        const bytes = new Uint8Array(digest);
+        const hex = Array.from(bytes).slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('');
+        return `gh-${hex}`;
+      }
+    } catch (err) {
+      // Ignore errors and try the next service
+      console.warn(`Failed to get IP from ${url}:`, err);
+    }
   }
+
+  // If all services fail
+  return null;
 }

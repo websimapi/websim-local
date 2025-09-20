@@ -117,7 +117,44 @@ body {
 .msg .author { font-weight: 600; color: var(--fg); }
 .msg .time { color: var(--muted); }
 
-#composer { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--line); flex-shrink: 0; }
+#composer { 
+  display: grid; 
+  grid-template-columns: 1fr auto; 
+  gap: 10px; 
+  padding: 12px 20px; 
+  border-top: 1px solid var(--line); 
+  flex-shrink: 0;
+  position: relative;
+  padding-bottom: 30px;
+}
+.composer-status {
+    position: absolute;
+    bottom: 8px;
+    left: 22px;
+    font-size: 11px;
+    color: var(--muted);
+}
+#composer[data-status="connected"] .composer-status::before {
+    content: '●';
+    color: #22c55e;
+    margin-right: 6px;
+    font-size: 10px;
+}
+#composer[data-status="disconnected"] .composer-status::before {
+    content: '●';
+    color: #ef4444;
+    margin-right: 6px;
+    font-size: 10px;
+}
+#composer[data-status="disconnected"] input,
+#composer[data-status="disconnected"] button {
+    opacity: 0.6;
+    pointer-events: none;
+}
+#composer[data-status="disconnected"] input {
+    background-color: var(--line);
+}
+
 #input { 
   width: 100%; 
   padding: 12px; 
@@ -174,4 +211,3 @@ input:checked + .slider:before { transform: translateX(14px); }
   .main { order: 1; height: 100vh; }
   .msg { max-width: 90%; }
 }
-
