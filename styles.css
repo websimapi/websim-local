@@ -23,17 +23,18 @@ body { margin: 0; font-family: "Noto Sans", system-ui, -apple-system, Segoe UI, 
 .msg { display: grid; gap: 4px; max-width: 70ch; }
 .msg .meta { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
 .msg .bubble { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
-.msg.you .bubble { border-color: var(--accent); }
+.msg.you { justify-self: end; text-align: right; }
+.msg.you .bubble { background: #111; color: #fff; border-color: #111; }
+.msg .bubble { animation: pop 120ms ease-out; }
+@keyframes pop { from { transform: translateY(4px); opacity: .0; } to { transform: none; opacity: 1; } }
 .msg .author { font-weight: 600; color: var(--fg); }
 .msg .time { color: var(--muted); }
 
-#composer { grid-template-columns: 1fr auto auto; }
-#input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--line); outline: none; }
-#input:focus { border-color: var(--fg); }
-#sendBtn { padding: 0 16px; border-radius: 8px; border: 1px solid var(--fg); background: var(--fg); color: #fff; cursor: pointer; }
-#sendBtn:hover { filter: brightness(0.95); }
-#micBtn { border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; padding: 0 12px; }
-#micBtn.recording { border-color: #ef4444; color: #ef4444; }
+#composer { display: grid; gap: 10px; padding: 12px; position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); }
+#input, #sendBtn, #micBtn { height: 44px; }
+.typing { min-height: 18px; padding: 0 20px; color: var(--muted); font-size: 12px; }
+.scroll-down { position: absolute; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); display: none; padding: 8px 10px; border: 1px solid var(--line); background: #fff; border-radius: 999px; }
+.scroll-down.show { display: inline-block; }
 
 @media (max-width: 900px) {
   #app { grid-template-columns: 1fr; }

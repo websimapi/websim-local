@@ -47,11 +47,13 @@
 
     <main class="main">
       <div id="messages" class="messages" aria-live="polite"></div>
+      <div id="typingBar" class="typing" aria-live="polite" aria-atomic="true"></div>
       <form id="composer" autocomplete="off">
         <input id="input" type="text" placeholder="Type a message…" aria-label="Message" required />
         <button id="micBtn" type="button" aria-label="Voice input">🎙️</button>
         <button id="sendBtn" type="submit">Send</button>
       </form>
+      <button id="scrollDown" class="scroll-down" aria-label="Scroll to latest">↓</button>
     </main>
   </div>
 

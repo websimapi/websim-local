@@ -13,6 +13,8 @@ const el = {
   rateRange: qs('#rateRange'),
   pitchRange: qs('#pitchRange'),
   micBtn: qs('#micBtn'),
+  typingBar: qs('#typingBar'),
+  scrollDown: qs('#scrollDown'),
 };
 
 let room;
@@ -49,6 +51,7 @@ let recognition = null, recognizing = false;
 
   // Subscriptions
   room.subscribePresence(updatePeerList);
+  room.subscribePresence(p => updateTypingBar());
   room.subscribeRoomState(() => {}); // no-op, placeholder for future
   room.onmessage = (event) => {
     const data = event.data || event;
@@ -72,6 +75,7 @@ let recognition = null, recognizing = false;
 
   // UI events
   el.form.addEventListener('submit', onSend);
+  el.input.addEventListener('input', onTyping);
   el.muteToggle.addEventListener('change', () => {
     tts.muted = el.muteToggle.checked;
   });
@@ -85,6 +89,9 @@ let recognition = null, recognizing = false;
 
   // Status
   el.groupStatus.textContent = groupHash.startsWith("isolated-") ? "Isolated (no network match)" : "Local-only linked";
+  if (!/Mobi/i.test(navigator.userAgent)) el.input.focus();
+  el.messages.addEventListener('scroll', onScrollCheck);
+  el.scrollDown.addEventListener('click', () => scrollToBottom(true));
 })();
 
 // Send message
@@ -93,6 +100,7 @@ function onSend(e) {
   const text = el.input.value.trim();
   if (!text) return;
   el.input.value = "";
+  navigator.vibrate?.(10);
 
   const self = room.peers[room.clientId] || {};
   const payload = {
@@ -111,6 +119,7 @@ function onSend(e) {
 
 // Render message
 function addMessage(clientId, username, avatarUrl, text, timestamp, isYou = false) {
+  const nearBottom = isAtBottom();
   const wrap = document.createElement('div');
   wrap.className = `msg ${isYou || clientId === room.clientId ? 'you' : ''}`;
 
@@ -137,7 +146,7 @@ function addMessage(clientId, username, avatarUrl, text, timestamp, isYou = fals
 
   wrap.append(meta, bubble);
   el.messages.appendChild(wrap);
-  el.messages.scrollTop = el.messages.scrollHeight;
+  if (nearBottom) scrollToBottom(); else el.scrollDown.classList.add('show');
 }
 
 // Presence list
@@ -161,6 +170,7 @@ function updatePeerList() {
     li.append(img, span);
     el.peers.appendChild(li);
   }
+  updateTypingBar();
 }
 
 // TTS
@@ -232,4 +242,34 @@ async function deriveLocalGroupHash() {
   } catch {
     return null;
   }
+}
+
+let typingTimeout;
+function onTyping() {
+  room.updatePresence({ groupHash, typing: true });
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => room.updatePresence({ typing: false }), 1200);
+}
+
+function updateTypingBar() {
+  const list = Object.entries(room.peers || {})
+    .filter(([id]) => id !== room.clientId && room.presence[id]?.groupHash === groupHash && room.presence[id]?.typing)
+    .map(([, p]) => p.username || 'Someone');
+  el.typingBar.textContent = list.length ? `${list.join(', ')} ${list.length>1?'are':'is'} typing…` : '';
+}
+
+function isAtBottom() {
+  const { scrollTop, scrollHeight, clientHeight } = el.messages;
+  return scrollTop >= scrollHeight - clientHeight - 8;
+}
+
+function scrollToBottom(force=false) {
+  if (force || isAtBottom()) {
+    el.messages.scrollTop = el.messages.scrollHeight;
+    el.scrollDown.classList.remove('show');
+  }
+}
+
+function onScrollCheck() {
+  isAtBottom() ? el.scrollDown.classList.remove('show') : el.scrollDown.classList.add('show');
 }
