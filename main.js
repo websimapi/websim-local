@@ -133,15 +133,12 @@ function onSend(e) {
     text,
     timestamp: Date.now(),
     groupHash, // only hashed group identifier is shared
-    echo: true,
   };
   room.send(payload);
 
   // Locally render our own message immediately
-  if (!payload.echo) {
-      addMessage(room.clientId, self.username, self.avatarUrl, text, payload.timestamp, true);
-      speak(text);
-  }
+  addMessage(room.clientId, self.username, self.avatarUrl, text, payload.timestamp, true);
+  speak(text);
 }
 
 // Render message
