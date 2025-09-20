@@ -28,8 +28,12 @@ let tts = {
   pitch: 1,
 };
 
+// --- Main execution ---
+// Wait for the DOM to be fully loaded before running the app logic
+document.addEventListener('DOMContentLoaded', init);
+
 // Init
-(async function init() {
+async function init() {
   setupTheme();
   setupTTSUI();
   groupHash = await deriveLocalGroupHash().catch(() => null);
@@ -65,7 +69,7 @@ let tts = {
         break;
       case "chat":
         // Only accept if same groupHash
-        if (typeof data.groupHash === "string" && data.groupHash === groupHash) {
+        if (room && typeof data.groupHash === "string" && data.groupHash === groupHash) {
           addMessage(data.clientId, data.username, data.avatarUrl, data.text, data.timestamp);
           speak(data.text);
         }
@@ -95,12 +99,12 @@ let tts = {
   });
 
   // Status is set inside init()
-})();
+}
 
 function updateStatus(text, state) {
-    el.groupStatus.textContent = text;
-    el.composerStatus.textContent = text;
-    el.composer.dataset.status = state; // 'connected', 'disconnected'
+    if (el.groupStatus) el.groupStatus.textContent = text;
+    if (el.composerStatus) el.composerStatus.textContent = text;
+    if (el.composer) el.composer.dataset.status = state; // 'connected', 'disconnected'
 }
 
 function setupTheme() {
@@ -260,7 +264,7 @@ async function deriveLocalGroupHash() {
 
       if (ip && typeof ip === 'string') {
         const enc = new TextEncoder().encode(ip);
-        const digest = await crypto.subtle.digest('SHA-265', enc);
+        const digest = await crypto.subtle.digest('SHA-256', enc);
         const bytes = new Uint8Array(digest);
         const hex = Array.from(bytes).slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('');
         return `gh-${hex}`;
