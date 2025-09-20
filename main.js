@@ -12,6 +12,7 @@ const el = {
   voiceSelect: qs('#voiceSelect'),
   rateRange: qs('#rateRange'),
   pitchRange: qs('#pitchRange'),
+  micBtn: qs('#micBtn'),
 };
 
 let room;
@@ -22,6 +23,7 @@ let tts = {
   rate: 1,
   pitch: 1,
 };
+let recognition = null, recognizing = false;
 
 // Init
 (async function init() {
@@ -79,6 +81,7 @@ let tts = {
   });
   el.rateRange.addEventListener('input', () => tts.rate = parseFloat(el.rateRange.value));
   el.pitchRange.addEventListener('input', () => tts.pitch = parseFloat(el.pitchRange.value));
+  setupSTT();
 
   // Status
   el.groupStatus.textContent = groupHash.startsWith("isolated-") ? "Isolated (no network match)" : "Local-only linked";
@@ -196,6 +199,18 @@ function speak(text) {
   speechSynthesis.speak(utter);
 }
 
+function setupSTT() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { el.micBtn.disabled = true; el.micBtn.title = "Speech recognition not supported"; return; }
+  recognition = new SR(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = navigator.language || 'en-US';
+  let finalText = '';
+  recognition.onresult = (e) => { let interim=''; for (let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];(r.isFinal?finalText:interim)+=r[0].transcript;} el.input.value = (finalText + ' ' + interim).trim(); if (e.results[e.results.length-1].isFinal && el.input.value) { el.form.requestSubmit(); } };
+  recognition.onstart = () => { recognizing = true; el.micBtn.classList.add('recording'); el.micBtn.textContent = '⏹️'; };
+  recognition.onend = () => { recognizing = false; el.micBtn.classList.remove('recording'); el.micBtn.textContent = '🎙️'; };
+  recognition.onerror = () => { recognizing = false; el.micBtn.classList.remove('recording'); el.micBtn.textContent = '🎙️'; };
+  el.micBtn.addEventListener('click', async () => { try { recognizing ? recognition.stop() : recognition.start(); } catch {} });
+}
+
 // Derive a non-reversible local group hash from public IP.
 // Never store or expose the raw IP. Only share the hash for equality checks.
 async function deriveLocalGroupHash() {
@@ -218,4 +233,3 @@ async function deriveLocalGroupHash() {
     return null;
   }
 }
-

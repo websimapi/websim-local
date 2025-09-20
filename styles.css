@@ -27,15 +27,16 @@ body { margin: 0; font-family: "Noto Sans", system-ui, -apple-system, Segoe UI, 
 .msg .author { font-weight: 600; color: var(--fg); }
 .msg .time { color: var(--muted); }
 
-#composer { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--line); }
+#composer { grid-template-columns: 1fr auto auto; }
 #input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--line); outline: none; }
 #input:focus { border-color: var(--fg); }
 #sendBtn { padding: 0 16px; border-radius: 8px; border: 1px solid var(--fg); background: var(--fg); color: #fff; cursor: pointer; }
 #sendBtn:hover { filter: brightness(0.95); }
+#micBtn { border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; padding: 0 12px; }
+#micBtn.recording { border-color: #ef4444; color: #ef4444; }
 
 @media (max-width: 900px) {
   #app { grid-template-columns: 1fr; }
   .sidebar { order: 2; border-right: none; border-top: 1px solid var(--line); }
   .main { order: 1; }
 }
-
