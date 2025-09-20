@@ -204,7 +204,7 @@ function setupSTT() {
   if (!SR) { el.micBtn.disabled = true; el.micBtn.title = "Speech recognition not supported"; return; }
   recognition = new SR(); recognition.continuous = true; recognition.interimResults = true; recognition.lang = navigator.language || 'en-US';
   let finalText = '';
-  recognition.onresult = (e) => { let interim=''; for (let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];(r.isFinal?finalText:interim)+=r[0].transcript;} el.input.value = (finalText + ' ' + interim).trim(); if (e.results[e.results.length-1].isFinal && el.input.value) { el.form.requestSubmit(); } };
+  recognition.onresult = (e) => { let interim=''; for (let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i]; if (r.isFinal) { finalText += r[0].transcript; } else { interim += r[0].transcript; } } el.input.value = (finalText + ' ' + interim).trim(); if (e.results[e.results.length-1].isFinal && el.input.value) { el.form.requestSubmit(); } };
   recognition.onstart = () => { recognizing = true; el.micBtn.classList.add('recording'); el.micBtn.textContent = '⏹️'; };
   recognition.onend = () => { recognizing = false; el.micBtn.classList.remove('recording'); el.micBtn.textContent = '🎙️'; };
   recognition.onerror = () => { recognizing = false; el.micBtn.classList.remove('recording'); el.micBtn.textContent = '🎙️'; };
